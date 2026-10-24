@@ -1,0 +1,33 @@
+/* Colors and sizes used across the whole app.
+   Red and white theme, inspired by WMSU. */
+
+:root {
+  /* Brand reds */
+  --color-primary: #b91c1c;
+  --color-primary-hover: #991b1b;
+  --color-primary-dark: #7f1d1d;
+  --color-primary-light: #fdecec;
+
+  /* Page and text */
+  --color-background: #faf6f6;
+  --color-surface: #ffffff;
+  --color-text: #2b1d1d;
+  --color-text-muted: #6b5e5e;
+  --color-border: #e8dcdc;
+
+  /* Appointment status colors */
+  --color-pending-bg: #fef3c7;
+  --color-pending-text: #92400e;
+  --color-approved-bg: #dbeafe;
+  --color-approved-text: #1e40af;
+  --color-completed-bg: #dcfce7;
+  --color-completed-text: #166534;
+  --color-rejected-bg: #fee2e2;
+  --color-rejected-text: #b91c1c;
+  --color-neutral-bg: #eeeaea;
+  --color-neutral-text: #4b4040;
+
+  --radius: 8px;
+  --radius-large: 12px;
+  --sidebar-width: 230px;
+}
