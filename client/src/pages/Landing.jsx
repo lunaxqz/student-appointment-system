@@ -17,8 +17,8 @@ function Landing() {
             <a href="#about">About</a>
           </nav>
           <div className="nav-buttons">
-            <Link to="/" className="login-btn">Log in</Link>
-            <Link to="/" className="signup-btn">Get started</Link>
+            <Link to="/login" className="login-btn">Log in</Link>
+            <Link to="/register" className="signup-btn">Get started</Link>
           </div>
         </div>
       </header>
@@ -32,7 +32,7 @@ function Landing() {
               Book time with academic advisers, faculty, and campus services without the back-and-forth.
             </p>
             <div className="hero-buttons">
-              <Link to="/" className="primary-btn">Book an appointment</Link>
+              <Link to="/login" className="primary-btn">Book an appointment</Link>
               <a href="#services" className="secondary-btn">Explore services</a>
             </div>
             <p className="hero-note"><span className="status-dot" /> A simpler way to connect with campus</p>
@@ -76,7 +76,7 @@ function Landing() {
           </div>
           <div className="about-action">
             <p>Spend less time arranging meetings and more time focusing on your academic goals.</p>
-            <Link to="/" className="about-link">Create your account <span aria-hidden="true">→</span></Link>
+            <Link to="/register" className="about-link">Create your account <span aria-hidden="true">→</span></Link>
           </div>
         </section>
       </main>
