@@ -26,7 +26,7 @@ function Landing() {
       <main>
         <section className="hero" aria-labelledby="hero-title">
           <div className="hero-content">
-            <p className="eyebrow"><span className="eyebrow-line" /> STUDENT APPOINTMENT SYSTEM</p>
+            <p className="eyebrow"><span className="eyebrow-line" /> STUDENT SCHEDULING APPOINTMENT SYSTEM</p>
             <h1 id="hero-title">Make time for what <span>moves you forward.</span></h1>
             <p className="hero-description">
               Book time with academic advisers, faculty, and campus services without the back-and-forth.
