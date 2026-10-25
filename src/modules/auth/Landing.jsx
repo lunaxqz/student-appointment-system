@@ -30,13 +30,10 @@ function Landing({ onAuth }) {
               Book time with academic advisers, faculty, and campus services without the back-and-forth.
             </p>
             <div className="hero-buttons">
-              <button type="button" className="primary-btn" onClick={() => onAuth('in')}>Book an appointment</button>
+              <button type="button" className="primary-btn" onClick={() => onAuth('up')}>Book an appointment</button>
               <a href="#services" className="secondary-btn">Explore services</a>
             </div>
             <p className="hero-note"><span className="status-dot" /> A simpler way to connect with campus</p>
-          </div>
-          <div className="hero-caption" aria-hidden="true">
-            <span>Here for your next step</span><span>01 / 03</span>
           </div>
         </section>
 
