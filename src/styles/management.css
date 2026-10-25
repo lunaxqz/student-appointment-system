@@ -1,0 +1,197 @@
+/* Faculty and admin screens: schedule timeline, bars, row menus and edit panels. */
+
+.count-pill {
+  padding: 1px 9px;
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--color-primary-light);
+  border-radius: 99px;
+}
+
+/* Faculty dashboard */
+
+.timeline-row {
+  display: grid;
+  grid-template-columns: 72px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 0;
+  border-top: 1px solid var(--color-border);
+}
+
+.request-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 0;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--color-border);
+  cursor: pointer;
+}
+
+.request-item .item-main > * {
+  display: block;
+}
+
+.review-all {
+  width: 100%;
+  margin-top: 8px;
+}
+
+/* Admin dashboard */
+
+.bar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.bar-row {
+  display: grid;
+  grid-template-columns: 90px 1fr 44px;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.bar-track {
+  height: 8px;
+  overflow: hidden;
+  background: var(--color-neutral-bg);
+  border-radius: 99px;
+}
+
+.bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+}
+
+.bar-approved  { background: var(--color-approved-text); }
+.bar-completed { background: var(--color-completed-text); }
+.bar-pending   { background: #d97706; }
+.bar-cancelled { background: #9ca3af; }
+.bar-rejected  { background: var(--color-rejected-text); }
+
+.bar-value {
+  font-weight: 600;
+  text-align: right;
+}
+
+.quick-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px 0;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--color-border);
+  cursor: pointer;
+}
+
+/* Account status with a colored dot */
+
+.status-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+}
+
+.status-dot::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  background: currentColor;
+  border-radius: 50%;
+}
+
+.dot-active {
+  color: var(--color-completed-text);
+}
+
+.dot-inactive {
+  color: var(--color-text-muted);
+}
+
+/* Row action menu (the ••• button) */
+
+.row-menu-wrap {
+  position: relative;
+}
+
+.menu-button {
+  padding: 4px 10px;
+  font: inherit;
+  letter-spacing: 1px;
+  color: var(--color-text-muted);
+  background: none;
+  border: 0;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.menu-button:hover {
+  background: var(--color-background);
+}
+
+.row-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 20;
+  min-width: 170px;
+  padding: 6px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-large);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.row-menu button {
+  display: block;
+  width: 100%;
+  padding: 8px 10px;
+  font: inherit;
+  text-align: left;
+  color: var(--color-text);
+  background: none;
+  border: 0;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.row-menu button:hover {
+  background: var(--color-background);
+}
+
+.row-menu button.danger {
+  color: var(--color-rejected-text);
+}
+
+/* Manage staff */
+
+.edit-panel td {
+  padding: 16px 18px 20px;
+  background: var(--color-background);
+}
+
+.tag-remove {
+  margin-left: 4px;
+  padding: 0;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}

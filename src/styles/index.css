@@ -1,0 +1,7 @@
+@import './variables.css';
+@import './base.css';
+@import './layout.css';
+@import './components.css';
+@import './student.css';
+@import './schedule.css';
+@import './management.css';
