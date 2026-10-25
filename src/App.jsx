@@ -4,6 +4,7 @@ import { getSession, loadDb, saveDb, seedDb, setSession } from './lib/db.js';
 import Sidebar from './components/Sidebar.jsx';
 import Topbar from './components/Topbar.jsx';
 import Auth from './modules/auth/Auth.jsx';
+import Landing from './modules/auth/Landing.jsx';
 import FindFaculty from './modules/services/FindFaculty.jsx';
 import Schedule from './modules/services/Schedule.jsx';
 import ManageStaff from './modules/services/ManageStaff.jsx';
@@ -32,6 +33,8 @@ export default function App() {
   const [page, setPage] = useState('dashboard');
   const [pre, setPre] = useState('');
   const [msg, setMsg] = useState('');
+  const [showAuth, setShowAuth] = useState(false);
+  const [authMode, setAuthMode] = useState('in');
 
   useEffect(() => { (async () => { setDb(loadDb() || await seedDb()); setMeId(getSession()); })(); }, []);
 
@@ -39,14 +42,28 @@ export default function App() {
   const toast = (t) => { setMsg(t); setTimeout(() => setMsg(''), 3000); };
   const go = (p) => { if (p !== 'book') setPre(''); setPage(p); };
   const login = (id) => { setSession(id); setMeId(id); go('dashboard'); };
-  const logout = () => { setSession(null); setMeId(null); };
+  const logout = () => { setSession(null); setMeId(null); setShowAuth(false); };
 
   if (!db) return <p style={{ padding: 30 }}>Loading…</p>;
   const me = db.users.find((u) => u.id === meId && u.active);
   const ctx = { db, me, commit, toast, go };
   const Toast = msg && <div className="toast">{msg}</div>;
 
-  if (!me) return <AppContext.Provider value={ctx}><Auth onLogin={login} />{Toast}</AppContext.Provider>;
+  if (!me) {
+    const openAuth = (mode) => {
+      setAuthMode(mode);
+      setShowAuth(true);
+    };
+
+    return (
+      <AppContext.Provider value={ctx}>
+        {showAuth
+          ? <Auth onLogin={login} onBack={() => setShowAuth(false)} initialMode={authMode} />
+          : <Landing onAuth={openAuth} />}
+        {Toast}
+      </AppContext.Provider>
+    );
+  }
 
   const pages = {
     student: {

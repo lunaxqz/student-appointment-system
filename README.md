@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 # Student Appointment Scheduling System
 
 A web-based Student Appointment Scheduling System built using React, Node.js, Express, and PostgreSQL.
@@ -19,7 +19,7 @@ The system allows students to request appointments with university staff and ser
 
 ```text
 student-appointment-system/
-├── client/              # React frontend
+├── src/                 # React frontend
 ├── server/              # Express backend
 │   ├── middleware/      # Shared middleware
 │   ├── controllers/    # Feature logic
@@ -55,11 +55,10 @@ cd student-appointment-system
 ### 2. Install frontend dependencies
 
 ```bash
-cd client
 npm install
 ```
 
-Start the frontend:
+Start the frontend from the project root:
 
 ```bash
 npm run dev
@@ -169,7 +168,7 @@ The team should coordinate ownership of these areas. All members are expected to
 ## Current Project Status
 
 The initial project structure, PostgreSQL schema, backend database connection, and development setup are in place. Feature implementation and integration remain part of the team's development work.
-=======
+
 # CampusBook – Student Appointment System
 
 React + Vite. Run:
@@ -189,4 +188,3 @@ Demo logins: student@campus.edu / student123 · reyes@campus.edu / staff123 · a
 
 Tables: users, services, staff_services, availability, appointments, appointment_history.
 `src/lib/db.js` is the only file that touches storage: swap it for API calls to move to a real backend.
->>>>>>> origin/main

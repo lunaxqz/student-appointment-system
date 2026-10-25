@@ -13,7 +13,8 @@
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-.landing-page a {
+.landing-page a,
+.landing-page button {
   text-decoration: none;
 }
 
@@ -46,24 +47,15 @@
   align-items: center;
   gap: 11px;
   color: var(--ink);
-  font-size: 20px;
-  font-weight: 800;
+  font-size: 26px;
+  font-weight: 700;
   white-space: nowrap;
 }
 
-.brand-mark {
-  display: grid;
-  width: 38px;
-  aspect-ratio: 1;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--red);
-  color: var(--ink);
-  font-size: 13px;
-  letter-spacing: 0;
+.brand-accent {
+  color: #ffd6dc;
 }
 
-.brand-accent,
 .footer-brand span {
   color: var(--red);
 }
@@ -94,6 +86,9 @@
   color: #fff;
   font-size: 14px;
   font-weight: 700;
+  font-family: inherit;
+  border: 0;
+  cursor: pointer;
   transition: background 160ms ease, transform 160ms ease;
 }
 .nav-links a:hover,
@@ -118,6 +113,9 @@
   color: #700404;
   font-size: 14px;
   font-weight: 700;
+  font-family: inherit;
+  border: 0;
+  cursor: pointer;
   transition: background 160ms ease, transform 160ms ease;
 }
 
@@ -125,6 +123,10 @@
 .primary-btn:hover {
   transform: translateY(-2px);
   background: var(--red-dark);
+}
+
+.signup-btn:hover {
+  color: #fff;
 }
 
 .hero {
@@ -374,6 +376,11 @@
   color: var(--red);
   font-size: 14px;
   font-weight: 800;
+  font-family: inherit;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--red);
+  cursor: pointer;
 }
 
 .footer {
@@ -466,13 +473,7 @@
   }
 
   .brand {
-    gap: 7px;
-    font-size: 16px;
-  }
-
-  .brand-mark {
-    width: 32px;
-    font-size: 11px;
+    font-size: 17px;
   }
 
   .nav-buttons {
