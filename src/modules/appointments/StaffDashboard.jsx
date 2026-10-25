@@ -2,12 +2,16 @@ import { useApp } from '../../context.jsx';
 import Icon from '../../components/Icons.jsx';
 import Avatar from '../../components/Avatar.jsx';
 import StatusPill from '../../components/StatusPill.jsx';
-import { ACTIVE, f12, nm, sv, ymd } from '../../lib/utils.js';
+import LoadState from '../../components/LoadState.jsx';
+import useLoad from '../../lib/useLoad.js';
+import { appointmentApi } from '../../lib/endpoints.js';
+import { ACTIVE, f12, ymd } from '../../lib/utils.js';
 import { fullDate } from './logic.js';
 
 export default function StaffDashboard() {
-  const { db, me, go } = useApp();
-  const mine = db.appointments.filter((a) => a.staff_id === me.id);
+  const { me, go } = useApp();
+  const { data: mine, loading, error, reload } = useLoad((signal) => appointmentApi.list(signal), []);
+  if (!mine) return <div className="card"><LoadState loading={loading} error={error} onRetry={reload} loadingText="Loading your dashboard…" /></div>;
   const now = new Date();
   const today = ymd(now);
   const in14Days = new Date();
@@ -68,8 +72,8 @@ export default function StaffDashboard() {
             <div className="timeline-row" key={a.id}>
               <span className="text-muted text-small">{f12(a.time)}</span>
               <div>
-                <b>{nm(db, a.student_id)}</b>
-                <div className="text-muted text-small">{sv(db, a.service_id)}</div>
+                <b>{a.student.name}</b>
+                <div className="text-muted text-small">{a.service.name}</div>
               </div>
               <StatusPill status={a.status} />
             </div>
@@ -87,10 +91,10 @@ export default function StaffDashboard() {
           {pending.length === 0 && <p className="text-muted">No requests waiting on you.</p>}
           {pending.slice(0, 3).map((a) => (
             <button className="request-item" key={a.id} onClick={() => go('requests')}>
-              <Avatar name={nm(db, a.student_id)} small />
+              <Avatar name={a.student.name} small />
               <span className="item-main">
-                <b>{nm(db, a.student_id)}</b>
-                <span className="text-muted text-small">{sv(db, a.service_id)}</span>
+                <b>{a.student.name}</b>
+                <span className="text-muted text-small">{a.service.name}</span>
                 <span className="text-muted text-small">{fullDate(a.date)} · {f12(a.time)}</span>
               </span>
               <Icon name="chevronRight" size={18} />

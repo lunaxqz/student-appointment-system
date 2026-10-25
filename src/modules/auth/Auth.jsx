@@ -1,44 +1,56 @@
 import { useState } from 'react';
-import { useApp } from '../../context.jsx';
 import { Field } from '../../components/ui.jsx';
-import { hashPassword } from './password.js';
-import { uid } from '../../lib/utils.js';
+import { authApi } from '../../lib/endpoints.js';
+import { errorMessage } from '../../lib/api.js';
 import './Auth.css';
 
-export default function Auth({ onLogin, onBack, initialMode = 'in' }) {
-  const { db, commit } = useApp();
+// Sign-in and sign-up both go to the server (PostgreSQL). Passwords are hashed there; the browser never stores them.
+export default function Auth({ onSignedIn, onBack, initialMode = 'in' }) {
   const [mode, setMode] = useState(initialMode);
   const [f, setF] = useState({ lastName: '', firstName: '', middleName: '', email: '', studentId: '', course: '', password: '', confirmPassword: '', role: 'student' });
   const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
 
   const submit = async (e) => {
     e.preventDefault(); setErr('');
     const email = f.email.trim().toLowerCase();
+
+    if (mode === 'in') {
+      if (!email || !f.password) return setErr('Enter your email and password.');
+      setBusy(true);
+      try {
+        const { token, user } = await authApi.login(email, f.password);
+        return onSignedIn(token, user);
+      } catch (error) {
+        return setErr(errorMessage(error, 'Could not sign in. Please try again.'));
+      } finally {
+        setBusy(false);
+      }
+    }
+
     const lastName = f.lastName.trim();
     const firstName = f.firstName.trim();
     const middleName = f.middleName.trim();
     const studentId = f.studentId.trim();
     const course = f.course.trim();
-    const hash = await hashPassword(f.password);
-    if (mode === 'in') {
-      const u = db.users.find((x) => x.email === email && x.password_hash === hash);
-      if (!u) return setErr('Email or password is incorrect.');
-      if (!u.active) return setErr('This account is deactivated. Contact an administrator.');
-      return onLogin(u.id);
-    }
     if (!lastName || !firstName || !email.includes('@')) return setErr('Enter your last name, first name, and a valid email.');
     if (f.role === 'student' && (!studentId || !course)) return setErr('Enter your student ID and course.');
-    if (f.role === 'student' && db.users.some((x) => x.student_id === studentId)) return setErr('An account with this student ID already exists.');
     if (f.password.length < 6) return setErr('Use a password of at least 6 characters.');
     if (f.password !== f.confirmPassword) return setErr('Passwords do not match.');
-    if (db.users.some((x) => x.email === email)) return setErr('An account with this email already exists.');
-    const fullName = [lastName, firstName, middleName].filter(Boolean).join(' ');
-    const id = uid('u_');
-    const studentDetails = f.role === 'student' ? { student_id: studentId, course } : {};
-    commit((d) => d.users.push({ id, name: fullName, email, password_hash: hash, role: f.role, active: true, title: '', dept: '', bio: '', ...studentDetails }));
-    onLogin(id);
+
+    setBusy(true);
+    try {
+      const body = { full_name: [lastName, firstName, middleName].filter(Boolean).join(' '), email, password: f.password, role: f.role };
+      if (f.role === 'student') { body.student_id = studentId; body.course = course; }
+      const { token, user } = await authApi.register(body);
+      onSignedIn(token, user);
+    } catch (error) {
+      setErr(errorMessage(error, 'Could not create the account. Please try again.'));
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -104,7 +116,7 @@ export default function Auth({ onLogin, onBack, initialMode = 'in' }) {
         )}
         {err && <div className="error-text">{err}</div>}
         <div className="form-row" style={{ marginTop: 14 }}>
-          <button className="button button-primary" type="submit">{mode === 'in' ? 'Sign in' : 'Create account'}</button>
+          <button className="button button-primary" type="submit" disabled={busy}>{busy ? 'Please wait…' : mode === 'in' ? 'Sign in' : 'Create account'}</button>
           <button type="button" className="button" onClick={() => { setMode(mode === 'in' ? 'up' : 'in'); setErr(''); }}>
             {mode === 'in' ? 'Need an account?' : 'Have an account?'}
           </button>
@@ -112,7 +124,9 @@ export default function Auth({ onLogin, onBack, initialMode = 'in' }) {
       </form>
       <div className="card text-small text-muted">
         <b style={{ color: 'var(--color-text)' }}>Demo accounts</b><br />
-        marksantos@wmsu.edu.ph / student123<br />reyes@wmsu.edu.ph / staff123<br />admin@wmsu.edu.ph / admin123
+        marksantos@wmsu.edu.ph / student123<br />reyes@wmsu.edu.ph / staff123<br />
+        admin@wmsu.edu.ph / admin123<br />
+        <span>Created by <code>npm run seed-demo</code> in the server folder.</span>
       </div>
     </div>
   );

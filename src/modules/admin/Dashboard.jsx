@@ -1,42 +1,74 @@
+import { useCallback, useEffect, useState } from 'react';
 import { useApp } from '../../context.jsx';
 import Icon from '../../components/Icons.jsx';
 import Avatar from '../../components/Avatar.jsx';
 import StatusPill from '../../components/StatusPill.jsx';
-import { f12, nm, sv } from '../../lib/utils.js';
-import { fullDate } from '../appointments/logic.js';
+import LoadState from '../../components/LoadState.jsx';
+import { adminApi } from '../../lib/endpoints.js';
+import { errorMessage, isCanceled } from '../../lib/api.js';
+import { dateText, timeText } from './format.js';
 
 const STATUSES = ['approved', 'completed', 'pending', 'cancelled', 'rejected'];
 
 export default function Dashboard() {
-  const { db, go } = useApp();
-  const count = (status) => db.appointments.filter((a) => a.status === status).length;
-  const staff = db.users.filter((u) => u.role === 'staff');
-  const biggest = Math.max(1, ...STATUSES.map(count));
-  const recent = db.appointments.slice().sort((a, b) => b.created_at - a.created_at).slice(0, 5);
+  const { go } = useApp();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [attempt, setAttempt] = useState(0);
+  const retry = useCallback(() => setAttempt((n) => n + 1), []);
 
-  const cards = [
-    ['Total users', db.users.length, db.users.filter((u) => u.role === 'student').length + ' students', 'users', 'blue'],
-    ['Faculty members', staff.length, staff.filter((u) => u.active).length + ' currently active', 'userPlus', 'teal'],
-    ['Total appointments', db.appointments.length, 'All time', 'calendar', 'green'],
-    ['Pending requests', count('pending'), 'Across all faculty', 'clock', 'amber'],
-  ];
+  // Statistics come from GET /api/admin/dashboard, which counts the real PostgreSQL rows.
+  useEffect(() => {
+    const controller = new AbortController();
+    setLoading(true); setError('');
+    adminApi.dashboard(controller.signal)
+      .then((d) => { setData(d); setLoading(false); })
+      .catch((err) => { if (isCanceled(err)) return; setError(errorMessage(err, 'Could not load the dashboard.')); setLoading(false); });
+    return () => controller.abort();
+  }, [attempt]);
+
   const quickActions = [
     ['users', 'Manage Users', 'Review accounts and access', 'users'],
-    ['staff', 'Manage Staff', 'Assign services and profiles', 'userPlus'],
+    ['staff', 'Manage Staff', 'Assign services and schedules', 'userPlus'],
     ['appts', 'View Appointments', 'Monitor appointment records', 'calendarCheck'],
+  ];
+
+  const header = (
+    <div className="page-header">
+      <div>
+        <h1>Administration Dashboard</h1>
+        <p className="page-subtitle">A clear overview of university appointment activity.</p>
+      </div>
+      <button className="button button-primary button-large" onClick={() => go('users', 'add')}>
+        <Icon name="plus" size={18} /> Add user
+      </button>
+    </div>
+  );
+
+  if (loading || error) {
+    return (
+      <>
+        {header}
+        <div className="card"><LoadState loading={loading} error={error} onRetry={retry} loadingText="Loading dashboard…" /></div>
+      </>
+    );
+  }
+
+  const { users, appointments, recentAppointments } = data;
+  const counts = appointments.byStatus;
+  const biggest = Math.max(1, ...STATUSES.map((s) => counts[s] || 0));
+
+  const cards = [
+    ['Total users', users.total.toLocaleString(), '+' + users.newThisMonth + ' this month', 'users', 'blue'],
+    ['Faculty members', users.staff.toLocaleString(), users.activeStaff + ' currently active', 'userPlus', 'teal'],
+    ['Total appointments', appointments.total.toLocaleString(), 'All time', 'calendar', 'green'],
+    ['Pending requests', appointments.pending.toLocaleString(), 'Across all faculty', 'clock', 'amber'],
   ];
 
   return (
     <>
-      <div className="page-header">
-        <div>
-          <h1>Administration Dashboard</h1>
-          <p className="page-subtitle">A clear overview of university appointment activity.</p>
-        </div>
-        <button className="button button-primary button-large" onClick={() => go('users')}>
-          <Icon name="plus" size={18} /> Add user
-        </button>
-      </div>
+      {header}
 
       <div className="stat-cards">
         {cards.map(([label, value, note, icon, tone]) => (
@@ -56,15 +88,19 @@ export default function Dashboard() {
           <div className="panel-header">
             <div><h2>Appointment overview</h2><p className="text-muted text-small">All appointments by status</p></div>
           </div>
-          <div className="bar-list">
-            {STATUSES.map((s) => (
-              <div className="bar-row" key={s}>
-                <span className="text-muted">{s[0].toUpperCase() + s.slice(1)}</span>
-                <span className="bar-track"><span className={'bar-fill bar-' + s} style={{ width: (count(s) / biggest) * 100 + '%' }} /></span>
-                <span className="bar-value">{count(s)}</span>
-              </div>
-            ))}
-          </div>
+          {appointments.total === 0 ? (
+            <p className="text-muted empty-state">No appointments have been booked yet.</p>
+          ) : (
+            <div className="bar-list">
+              {STATUSES.map((s) => (
+                <div className="bar-row" key={s}>
+                  <span className="text-muted">{s[0].toUpperCase() + s.slice(1)}</span>
+                  <span className="bar-track"><span className={'bar-fill bar-' + s} style={{ width: ((counts[s] || 0) / biggest) * 100 + '%' }} /></span>
+                  <span className="bar-value">{(counts[s] || 0).toLocaleString()}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="card">
@@ -90,19 +126,19 @@ export default function Dashboard() {
           <table>
             <thead><tr><th>Student</th><th>Faculty</th><th>Service</th><th>Date & time</th><th>Status</th></tr></thead>
             <tbody>
-              {recent.map((a) => (
+              {recentAppointments.map((a) => (
                 <tr key={a.id}>
-                  <td><div className="person-cell"><Avatar name={nm(db, a.student_id)} small /> {nm(db, a.student_id)}</div></td>
-                  <td>{nm(db, a.staff_id)}</td>
-                  <td>{sv(db, a.service_id)}</td>
-                  <td><b>{fullDate(a.date)}</b><div className="text-muted text-small">{f12(a.time)}</div></td>
+                  <td><div className="person-cell"><Avatar name={a.student.name} small /> {a.student.name}</div></td>
+                  <td>{a.staff.name}</td>
+                  <td>{a.service.name}</td>
+                  <td><b>{dateText(a.date)}</b><div className="text-muted text-small">{timeText(a.date)}</div></td>
                   <td><StatusPill status={a.status} /></td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-        {!recent.length && <p className="text-muted empty-state">No appointments yet.</p>}
+        {!recentAppointments.length && <p className="text-muted empty-state">No appointments yet.</p>}
       </div>
     </>
   );

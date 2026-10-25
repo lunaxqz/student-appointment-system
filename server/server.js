@@ -3,9 +3,14 @@ const express = require('express');
 const cors = require('cors');
 const pool = require('./db');
 const errorHandler = require('./middleware/errorHandler');
+const authRoutes = require('./routes/auth');
+const adminRoutes = require('./routes/admin');
+const schedulingRoutes = require('./routes/scheduling');
+const appointmentRoutes = require('./routes/appointments');
+const ensureDemoAdmin = require('./utils/demoAdmin');
 
 const app = express();
-const PORT = 5000;
+const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors());
@@ -31,10 +36,21 @@ app.get('/api/db-test', async (req, res) => {
     }
 });
 
+// Feature routes
+app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/appointments', appointmentRoutes);
+app.use('/api', schedulingRoutes);
+
 // Error-handling middleware
 app.use(errorHandler);
 
-// Start the server
-app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
-});
+// Start the server (skipped when the file is imported by the tests)
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`Server is running on http://localhost:${PORT}`);
+        ensureDemoAdmin().catch((err) => console.warn('Could not check for the demo admin:', err.message));
+    });
+}
+
+module.exports = app;

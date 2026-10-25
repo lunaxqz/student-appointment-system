@@ -80,6 +80,8 @@ Run the SQL statements in `db/schema.sql` against that database using pgAdmin or
 
 The schema should be applied only once to a fresh database. If the tables already exist, do not execute it again without checking first.
 
+**Upgrading a database you created earlier?** Do not re-run `schema.sql`. Run `db/migrations/001_connect_frontend.sql` once instead. It adds the student/faculty profile columns, switches availability to weekly repeating blocks, and adds the double-booking guard. Back up first.
+
 ### 4. Configure the backend
 
 Open a second terminal from the project root:
@@ -100,6 +102,8 @@ DB_PORT=5432
 DB_NAME=appointments_db
 DB_USER=postgres
 DB_PASSWORD=your_local_postgres_password
+# Optional: campus time zone (default Asia/Manila). Used to turn "Monday 09:00" into exact appointment times.
+# APP_TIMEZONE=Asia/Manila
 ```
 
 Do not commit or share your real `.env` file.
@@ -118,6 +122,15 @@ Test the API:
 
 - `http://localhost:5000/`
 - `http://localhost:5000/api/db-test`
+
+### 6. (Optional) Load demo data
+
+```bash
+cd server
+npm run seed-demo
+```
+
+This adds the demo services, three faculty members with weekly availability, a demo student and the demo admin. It only adds what is missing. Accounts: `admin@wmsu.edu.ph / admin123`, `reyes@wmsu.edu.ph / staff123` (also `santos@`, `cruz@`), `marksantos@wmsu.edu.ph / student123`.
 
 Keep the backend terminal running separately from the frontend terminal.
 
@@ -169,22 +182,18 @@ The team should coordinate ownership of these areas. All members are expected to
 
 The initial project structure, PostgreSQL schema, backend database connection, and development setup are in place. Feature implementation and integration remain part of the team's development work.
 
-# CampusBook – Student Appointment System
+## How the pieces connect
 
-React + Vite. Run:
+Every screen reads and writes PostgreSQL through the Express API. The browser stores nothing but the login token (in `sessionStorage`).
 
-    npm install
-    npm run dev
+| Area | Frontend | API |
+| --- | --- | --- |
+| Sign up / sign in / change password | `modules/auth`, `admin/Settings` | `POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me`, `PATCH /api/auth/password` |
+| Services, faculty, open slots | Find Faculty, Book | `GET /api/services`, `GET /api/faculty`, `GET /api/faculty/:id/slots` |
+| Weekly availability | Schedule, Manage Schedules | `GET /api/staff/:id/schedule`, `POST /api/availability`, `DELETE /api/availability/:id` |
+| Student / faculty appointments | Book, My Appointments, Requests, dashboards | `GET/POST /api/appointments`, `PATCH /api/appointments/:id/status` |
+| Administration | Users, Staff, Appointments, Dashboard | everything under `/api/admin/...` |
 
-Demo logins: student@campus.edu / student123 · reyes@campus.edu / staff123 · admin@campus.edu / admin123
+`src/lib/endpoints.js` has one function per endpoint. The server enforces the rules (who may do what, no double booking, valid status changes); hiding a button in React is never the only protection.
 
-## Structure
-- `src/modules/auth` – registration, login, password hashing, roles
-- `src/modules/services` – services, staff profiles, availability, find faculty
-- `src/modules/appointments` – booking, slots, double-booking prevention, status changes
-- `src/modules/admin` – dashboard, user management, appointment monitoring
-- `src/lib` – shared helpers + database layer (`db.js`, currently localStorage)
-- `src/components` – shared UI pieces
-
-Tables: users, services, staff_services, availability, appointments, appointment_history.
-`src/lib/db.js` is the only file that touches storage: swap it for API calls to move to a real backend.
+Tests: `cd server && npm test`.
