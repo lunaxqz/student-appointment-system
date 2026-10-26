@@ -2,30 +2,33 @@ import { useState } from 'react';
 import { useApp } from '../../context.jsx';
 import Icon from '../../components/Icons.jsx';
 import Avatar from '../../components/Avatar.jsx';
-import { DAYS, f12, sv, ymd } from '../../lib/utils.js';
-import { dayLabel, nextOpenSlot } from '../appointments/logic.js';
+import LoadState from '../../components/LoadState.jsx';
+import useLoad from '../../lib/useLoad.js';
+import { catalogApi } from '../../lib/endpoints.js';
+import { DAYS, f12, ymd } from '../../lib/utils.js';
+import { dayLabel } from '../appointments/logic.js';
 
 export default function FindFaculty({ setPre }) {
-  const { db, go } = useApp();
+  const { go } = useApp();
+  const { data, loading, error, reload } = useLoad((signal) => Promise.all([catalogApi.faculty({}, signal), catalogApi.services(signal)]), []);
   const [query, setQuery] = useState('');
   const [service, setService] = useState('');
   const [availability, setAvailability] = useState('');
   const [openProfile, setOpenProfile] = useState('');
 
+  if (!data) return <div className="card"><LoadState loading={loading} error={error} onRetry={reload} loadingText="Loading faculty…" /></div>;
+  const [faculty, services] = data;
+  const serviceName = (id) => services.find((x) => x.id === id)?.name || '';
+
   const weekFromNow = new Date();
   weekFromNow.setDate(weekFromNow.getDate() + 7);
 
-  const list = db.users
-    .filter((u) => u.role === 'staff' && u.active)
-    .map((u) => ({
-      user: u,
-      serviceIds: db.staff_services.filter((x) => x.staff_id === u.id).map((x) => x.service_id),
-      next: nextOpenSlot(db, u.id),
-    }))
+  const list = faculty
+    .map((user) => ({ user, serviceIds: user.service_ids, next: user.next_open }))
     .filter(({ user, serviceIds, next }) => {
-      const text = (user.name + user.title + user.dept + serviceIds.map((i) => sv(db, i)).join(' ')).toLowerCase();
+      const text = (user.name + user.title + user.dept + serviceIds.map(serviceName).join(' ')).toLowerCase();
       if (!text.includes(query.toLowerCase())) return false;
-      if (service && !serviceIds.includes(service)) return false;
+      if (service && !serviceIds.includes(Number(service))) return false;
       if (availability === 'week' && !(next && next.date <= ymd(weekFromNow))) return false;
       return true;
     })
@@ -49,7 +52,7 @@ export default function FindFaculty({ setPre }) {
         </div>
         <select value={service} onChange={(e) => setService(e.target.value)}>
           <option value="">All services</option>
-          {db.services.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+          {services.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
         <select value={availability} onChange={(e) => setAvailability(e.target.value)}>
           <option value="">Any availability</option>
@@ -65,7 +68,7 @@ export default function FindFaculty({ setPre }) {
 
       <div className="faculty-grid">
         {list.map(({ user, serviceIds, next }) => {
-          const days = [...new Set(db.availability.filter((a) => a.staff_id === user.id).map((a) => DAYS[a.weekday]))];
+          const days = user.weekdays.map((w) => DAYS[w]);
           return (
             <div className="card faculty-card" key={user.id}>
               <div className="faculty-head">
@@ -76,7 +79,7 @@ export default function FindFaculty({ setPre }) {
                 </div>
               </div>
               <p className="text-small">{user.bio || 'Provides student-centered guidance through individual appointments.'}</p>
-              <div className="tag-list">{serviceIds.map((i) => <span className="tag" key={i}>{sv(db, i)}</span>)}</div>
+              <div className="tag-list">{serviceIds.map((i) => <span className="tag" key={i}>{serviceName(i)}</span>)}</div>
 
               {openProfile === user.id && (
                 <div className="profile-details text-small">

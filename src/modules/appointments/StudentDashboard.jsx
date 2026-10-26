@@ -1,7 +1,10 @@
 import { useApp } from '../../context.jsx';
 import Icon from '../../components/Icons.jsx';
 import StatusPill from '../../components/StatusPill.jsx';
-import { ACTIVE, f12, nm, sv, ymd } from '../../lib/utils.js';
+import LoadState from '../../components/LoadState.jsx';
+import useLoad from '../../lib/useLoad.js';
+import { appointmentApi } from '../../lib/endpoints.js';
+import { ACTIVE, f12, ymd } from '../../lib/utils.js';
 
 const ACTIVITY = {
   pending: ['Request submitted', 'calendar', 'blue'],
@@ -13,8 +16,8 @@ const ACTIVITY = {
 
 const shortDate = (d) => new Date(d + 'T00:00').toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 
-function timeAgo(timestamp) {
-  const minutes = Math.floor((Date.now() - timestamp) / 60000);
+function timeAgo(iso) {
+  const minutes = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
   if (minutes < 1) return 'Just now';
   if (minutes < 60) return minutes + 'm ago';
   if (minutes < 1440) return Math.floor(minutes / 60) + 'h ago';
@@ -22,8 +25,10 @@ function timeAgo(timestamp) {
 }
 
 export default function StudentDashboard() {
-  const { db, me, go } = useApp();
-  const mine = db.appointments.filter((a) => a.student_id === me.id);
+  const { me, go } = useApp();
+  const { data: mine, loading, error, reload } = useLoad((signal) => appointmentApi.list(signal), []);
+  if (!mine) return <div className="card"><LoadState loading={loading} error={error} onRetry={reload} loadingText="Loading your dashboard…" /></div>;
+
   const today = ymd(new Date());
   const count = (status) => mine.filter((a) => a.status === status).length;
   const upcoming = mine
@@ -40,10 +45,9 @@ export default function StudentDashboard() {
     ['Completed', count('completed'), 'All time', 'history', 'teal'],
   ];
 
-  const myIds = new Set(mine.map((a) => a.id));
-  const activity = db.appointment_history
-    .filter((h) => myIds.has(h.appointment_id))
-    .sort((a, b) => b.at - a.at)
+  const activity = mine
+    .flatMap((a) => a.history.map((h) => ({ ...h, appointment: a })))
+    .sort((a, b) => new Date(b.at) - new Date(a.at))
     .slice(0, 4);
 
   return (
@@ -99,8 +103,8 @@ export default function StudentDashboard() {
                   <span>{date.toLocaleDateString(undefined, { month: 'short' }).toUpperCase()}</span>
                 </div>
                 <div className="item-main">
-                  <b>{sv(db, a.service_id)}</b>
-                  <div className="text-muted text-small">{nm(db, a.staff_id)}</div>
+                  <b>{a.service.name}</b>
+                  <div className="text-muted text-small">{a.staff.name}</div>
                 </div>
                 <span className="text-muted">{f12(a.time)}</span>
                 <StatusPill status={a.status} />
@@ -119,13 +123,12 @@ export default function StudentDashboard() {
           {activity.length === 0 && <p className="text-muted">No activity yet.</p>}
           {activity.map((h) => {
             const [label, icon, tone] = ACTIVITY[h.status];
-            const appointment = mine.find((a) => a.id === h.appointment_id);
             return (
               <div className="activity-item" key={h.id}>
                 <div className={'activity-icon tone-' + tone}><Icon name={icon} size={18} /></div>
                 <div>
                   <b>{label}</b>
-                  <div className="text-muted text-small">{sv(db, appointment.service_id)} · {timeAgo(h.at)}</div>
+                  <div className="text-muted text-small">{h.appointment.service.name} · {timeAgo(h.at)}</div>
                 </div>
               </div>
             );

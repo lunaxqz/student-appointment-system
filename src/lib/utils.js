@@ -1,4 +1,3 @@
-export const uid = (p) => p + Math.random().toString(36).slice(2, 8);
 export const ymd = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 export const tm = (s) => { const [h, m] = s.split(':'); return +h * 60 + +m; };
 export const hm = (n) => String((n / 60) | 0).padStart(2, '0') + ':' + String(n % 60).padStart(2, '0');
@@ -6,5 +5,3 @@ export const f12 = (s) => { const [h, m] = s.split(':'); return ((+h % 12) || 12
 export const fd = (d) => new Date(d + 'T00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 export const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 export const ACTIVE = ['pending', 'approved'];
-export const nm = (db, id) => (db.users.find((u) => u.id === id) || {}).name || '(removed)';
-export const sv = (db, id) => (db.services.find((s) => s.id === id) || {}).name || '(removed)';

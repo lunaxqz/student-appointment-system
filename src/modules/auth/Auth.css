@@ -1,0 +1,92 @@
+.login-page--register {
+  width: min(100% - 32px, 920px);
+  max-width: none;
+}
+
+.auth-form--register {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 22px;
+}
+
+.auth-form--register > h2,
+.auth-form--register > .auth-name-grid,
+.auth-form--register > .auth-role-email-grid,
+.auth-form--register > .auth-student-grid,
+.auth-form--register > .auth-password-grid,
+.auth-form--register > .error-text,
+.auth-form--register > .form-row {
+  grid-column: 1 / -1;
+}
+
+.auth-form--register > h2 {
+  margin-bottom: 0;
+}
+
+.auth-form--register label {
+  margin-top: 0;
+}
+
+.auth-name-grid {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px 22px;
+}
+
+.auth-student-grid {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 22px;
+}
+
+.auth-role-email-grid {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 22px;
+}
+
+.auth-password-grid {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 22px;
+}
+
+@media (max-width: 700px) {
+  .auth-form--register {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .auth-name-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .auth-student-grid,
+  .auth-role-email-grid {
+    gap: 16px;
+  }
+
+  .auth-password-grid {
+    gap: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-page--register {
+    width: min(100% - 20px, 920px);
+  }
+
+  .auth-form--register,
+  .auth-name-grid,
+  .auth-student-grid,
+  .auth-role-email-grid,
+  .auth-password-grid {
+    grid-template-columns: 1fr;
+  }
+
+}

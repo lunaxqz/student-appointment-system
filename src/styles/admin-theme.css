@@ -1,0 +1,305 @@
+/* Admin portal layout polish, using the app's ORIGINAL red and white theme.
+   No colors are redefined here: everything comes from variables.css.
+   Scoped to .theme-admin, so student and faculty screens are not affected. */
+
+.theme-admin {
+  --radius: 10px;
+  --radius-large: 18px;
+  --sidebar-width: clamp(250px, 21.6vw, 323px);
+
+  min-height: 100vh;
+  background: var(--color-background);
+}
+
+/* Sidebar */
+
+.theme-admin .sidebar {
+  gap: 6px;
+  padding: 32px 24px 24px;
+}
+
+.theme-admin .sidebar-brand-row {
+  gap: 14px;
+  padding: 0 8px 24px;
+}
+
+.theme-admin .sidebar-logo {
+  width: 50px;
+  height: 50px;
+  border-radius: 14px;
+}
+
+.theme-admin .sidebar-brand {
+  font-size: 16px;
+}
+
+.theme-admin .sidebar-subtitle {
+  font-size: 14px;
+}
+
+.theme-admin .sidebar-section-label {
+  margin: 4px 16px 8px;
+  font-size: 12px;
+}
+
+.theme-admin .nav-button {
+  gap: 14px;
+  padding: 13px 14px;
+  font-size: 16px;
+  border-radius: 12px;
+}
+
+.theme-admin .nav-button.active {
+  font-weight: 700;
+  box-shadow: inset 4px 0 0 var(--color-primary);
+}
+
+.theme-admin .help-card {
+  padding: 20px;
+  border-radius: 16px;
+}
+
+.theme-admin .help-card > svg {
+  display: block;
+  margin-bottom: 10px;
+  color: var(--color-primary-light);
+}
+
+.theme-admin .help-card b {
+  font-size: 16px;
+}
+
+.theme-admin .help-card p {
+  margin: 4px 0 14px;
+  font-size: 14px;
+}
+
+.theme-admin .help-link {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+@media (min-width: 861px) {
+  /* Settings and Log out sit under the menu; the help card is pushed to the bottom */
+  .theme-admin .sidebar-footer {
+    flex: 1;
+    margin-top: 28px;
+  }
+
+  .theme-admin .help-card {
+    margin-top: auto;
+  }
+}
+
+/* Top bar */
+
+.theme-admin .topbar {
+  min-height: 91px;
+  padding: 0 38px;
+}
+
+.theme-admin .breadcrumb {
+  font-size: 16px;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.icon-button {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  cursor: pointer;
+}
+
+.icon-button:hover {
+  border-color: var(--color-primary);
+}
+
+.icon-button:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+.icon-button-dot {
+  position: absolute;
+  top: 11px;
+  right: 12px;
+  width: 8px;
+  height: 8px;
+  background: var(--color-primary);
+  border: 2px solid var(--color-surface);
+  border-radius: 50%;
+  box-sizing: content-box;
+}
+
+.theme-admin .user-menu-button {
+  gap: 12px;
+}
+
+.theme-admin .topbar .person-avatar.small {
+  width: 46px;
+  height: 46px;
+  font-size: 14px;
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.theme-admin .user-menu-name {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.theme-admin .user-menu-role {
+  font-size: 13.5px;
+}
+
+/* Main area: fill the width */
+
+.theme-admin .main-content {
+  max-width: none;
+  padding: 38px 38px 48px;
+}
+
+.theme-admin .page-header {
+  margin-bottom: 28px;
+}
+
+.theme-admin .page-header h1 {
+  font-size: 34px;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+}
+
+.theme-admin .page-subtitle {
+  font-size: 17px;
+}
+
+.theme-admin .button {
+  border-radius: 10px;
+}
+
+.theme-admin .button-large {
+  padding: 15px 24px;
+  font-size: 16px;
+  font-weight: 700;
+  border-radius: 12px;
+}
+
+/* Cards */
+
+.theme-admin .card {
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+.theme-admin .table-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.theme-admin .card h2 {
+  font-size: 19px;
+  font-weight: 500;
+}
+
+.theme-admin .stat-cards {
+  gap: 20px;
+  margin-bottom: 26px;
+}
+
+.theme-admin .stat-card {
+  align-items: flex-start;
+  gap: 18px;
+  padding: 24px;
+}
+
+.theme-admin .stat-icon {
+  width: 53px;
+  height: 53px;
+  border-radius: 14px;
+}
+
+.theme-admin .stat-value {
+  font-size: 32px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.theme-admin .dashboard-columns {
+  grid-template-columns: 1.55fr 1fr;
+  gap: 26px;
+  align-items: stretch;
+}
+
+.theme-admin .dashboard-columns > .card {
+  margin-bottom: 0;
+}
+
+/* Appointment overview bars (status colors stay as in the original theme) */
+
+.theme-admin .bar-list {
+  gap: 18px;
+  margin-top: 22px;
+}
+
+.theme-admin .bar-row {
+  grid-template-columns: 100px 1fr 54px;
+  gap: 16px;
+}
+
+.theme-admin .bar-value {
+  font-weight: 700;
+}
+
+/* Quick actions */
+
+.theme-admin .quick-action {
+  gap: 16px;
+  padding: 16px 0;
+}
+
+.theme-admin .quick-action > svg {
+  color: var(--color-text-muted);
+}
+
+.theme-admin .quick-action:hover > svg {
+  color: var(--color-primary);
+}
+
+.theme-admin .quick-action b {
+  font-size: 14.5px;
+}
+
+.theme-admin .choice-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+}
+
+@media (max-width: 860px) {
+  .theme-admin .topbar {
+    padding: 12px 16px;
+  }
+
+  .theme-admin .main-content {
+    padding: 20px 16px 32px;
+  }
+
+  .theme-admin .page-header h1 {
+    font-size: 28px;
+  }
+
+  .theme-admin .dashboard-columns {
+    grid-template-columns: 1fr;
+  }
+}

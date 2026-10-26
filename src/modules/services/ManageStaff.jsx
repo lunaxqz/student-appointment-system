@@ -3,59 +3,88 @@ import { useApp } from '../../context.jsx';
 import Icon from '../../components/Icons.jsx';
 import Avatar from '../../components/Avatar.jsx';
 import Pager from '../../components/Pager.jsx';
-import { hashPassword } from '../auth/password.js';
-import { sv, uid } from '../../lib/utils.js';
+import LoadState from '../../components/LoadState.jsx';
+import useLoad from '../../lib/useLoad.js';
+import { adminApi, catalogApi } from '../../lib/endpoints.js';
+import { errorMessage } from '../../lib/api.js';
 import { userCode } from '../admin/userCode.js';
 
 const PAGE_SIZE = 6;
 const EMPTY_FORM = { name: '', email: '', password: '', title: '', dept: '' };
 
-// Admin: faculty profiles, the services offered, and which staff member offers what.
+// Admin: faculty profiles, the services offered, and which staff member offers what. Everything is saved in PostgreSQL.
 export default function ManageStaff() {
-  const { db, commit, toast } = useApp();
+  const { toast } = useApp();
+  const { data, loading, error, reload } = useLoad((signal) => Promise.all([adminApi.staff(signal), catalogApi.services(signal)]), []);
   const [query, setQuery] = useState('');
   const [service, setService] = useState('');
   const [status, setStatus] = useState('');
   const [page, setPage] = useState(1);
   const [adding, setAdding] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
-  const [editing, setEditing] = useState('');
+  const [editing, setEditing] = useState(null);   // id of the person whose panel is open
+  const [draft, setDraft] = useState(null);       // their profile being edited: { title, dept, bio }
   const [newService, setNewService] = useState('');
+  const [busy, setBusy] = useState(false);
 
-  const serviceIdsOf = (id) => db.staff_services.filter((x) => x.staff_id === id).map((x) => x.service_id);
-  const list = db.users
-    .filter((u) => u.role === 'staff')
-    .filter((u) => !service || serviceIdsOf(u.id).includes(service))
-    .filter((u) => !status || (status === 'active') === u.active)
-    .filter((u) => (u.name + u.email + u.title + u.dept).toLowerCase().includes(query.toLowerCase()));
+  if (!data) return <div className="card"><LoadState loading={loading} error={error} onRetry={reload} loadingText="Loading staff…" /></div>;
+  const [staff, services] = data;
+  const serviceName = (id) => services.find((s) => s.id === id)?.name || '';
+
+  const list = staff
+    .filter((u) => !service || u.service_ids.includes(Number(service)))
+    .filter((u) => !status || (status === 'active') === u.is_active)
+    .filter((u) => (u.full_name + u.email + u.title + u.dept).toLowerCase().includes(query.toLowerCase()));
   const rows = list.slice((Math.min(page, Math.ceil(list.length / PAGE_SIZE) || 1) - 1) * PAGE_SIZE).slice(0, PAGE_SIZE);
 
   const filtered = (setter) => (value) => { setter(value); setPage(1); };
   const clearFilters = () => { setQuery(''); setService(''); setStatus(''); setPage(1); };
   const set = (key) => (e) => setForm({ ...form, [key]: e.target.value });
-  const edit = (id, key, value) => commit((d) => { d.users.find((u) => u.id === id)[key] = value; });
 
-  const toggleService = (staffId, serviceId) => commit((d) => {
-    const i = d.staff_services.findIndex((x) => x.staff_id === staffId && x.service_id === serviceId);
-    i >= 0 ? d.staff_services.splice(i, 1) : d.staff_services.push({ staff_id: staffId, service_id: serviceId });
-  });
-  const removeService = (id) => commit((d) => {
-    d.services = d.services.filter((x) => x.id !== id);
-    d.staff_services = d.staff_services.filter((x) => x.service_id !== id);
-  });
-  const addService = () => {
-    if (!newService.trim()) return;
-    commit((d) => d.services.push({ id: uid('sv'), name: newService.trim() }));
-    setNewService('');
+  // Runs one request, then refreshes the lists. Errors from the server (e.g. a conflict) are shown as they are.
+  const run = async (work, done, failed) => {
+    setBusy(true);
+    try {
+      await work();
+      if (done) toast(done);
+      reload();
+      return true;
+    } catch (err) {
+      toast(errorMessage(err, failed));
+      return false;
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const openEditor = (u) => {
+    if (editing === u.id) { setEditing(null); setDraft(null); return; }
+    setEditing(u.id); setDraft({ title: u.title, dept: u.dept, bio: u.bio });
+  };
+  const saveProfile = (u) => run(() => adminApi.updateStaff(u.id, draft), 'Profile saved.', 'Could not save the profile.');
+
+  const toggleService = (u, serviceId) => {
+    const next = u.service_ids.includes(serviceId) ? u.service_ids.filter((x) => x !== serviceId) : [...u.service_ids, serviceId];
+    return run(() => adminApi.setStaffServices(u.id, next), null, 'Could not change the services.');
+  };
+  const addService = async () => {
+    const name = newService.trim();
+    if (!name) return;
+    if (await run(() => adminApi.createService(name), 'Service added.', 'Could not add the service.')) setNewService('');
+  };
+  const removeService = (s) => {
+    if (!window.confirm('Remove the service "' + s.name + '"? Faculty will no longer offer it.')) return;
+    return run(() => adminApi.deleteService(s.id), 'Service removed.', 'Could not remove the service.');
   };
 
   const addStaff = async () => {
     const email = form.email.trim().toLowerCase();
     if (!form.name.trim() || !email.includes('@') || form.password.length < 6) return toast('Name, valid email and 6+ character password required.');
-    if (db.users.some((u) => u.email === email)) return toast('Email already in use.');
-    const password_hash = await hashPassword(form.password);
-    commit((d) => d.users.push({ id: uid('u_'), name: form.name.trim(), email, password_hash, role: 'staff', active: true, title: form.title, dept: form.dept, bio: '' }));
-    setForm(EMPTY_FORM); setAdding(false); toast('Staff member added.');
+    const ok = await run(
+      () => adminApi.createUser({ full_name: form.name.trim(), email, password: form.password, role: 'staff', title: form.title.trim(), dept: form.dept.trim() }),
+      'Staff member added.', 'Could not create the staff member.'
+    );
+    if (ok) { setForm(EMPTY_FORM); setAdding(false); setPage(1); }
   };
 
   return (
@@ -72,12 +101,12 @@ export default function ManageStaff() {
         <div className="card">
           <h2>New staff member</h2>
           <div className="form-row">
-            <input placeholder="Full name" value={form.name} onChange={set('name')} />
-            <input placeholder="Email" value={form.email} onChange={set('email')} />
-            <input type="password" placeholder="Password (6+ characters)" value={form.password} onChange={set('password')} />
-            <input placeholder="Title (e.g. Faculty Adviser)" value={form.title} onChange={set('title')} />
-            <input placeholder="Office / department" value={form.dept} onChange={set('dept')} />
-            <button className="button button-primary" onClick={addStaff}>Create staff</button>
+            <input placeholder="Full name" maxLength={100} value={form.name} onChange={set('name')} />
+            <input type="email" placeholder="Email" maxLength={150} value={form.email} onChange={set('email')} />
+            <input type="password" placeholder="Password (6+ characters)" maxLength={72} autoComplete="new-password" value={form.password} onChange={set('password')} />
+            <input placeholder="Title (e.g. Faculty Adviser)" maxLength={100} value={form.title} onChange={set('title')} />
+            <input placeholder="Office / department" maxLength={100} value={form.dept} onChange={set('dept')} />
+            <button className="button button-primary" onClick={addStaff} disabled={busy}>Create staff</button>
             <button className="button" onClick={() => setAdding(false)}>Cancel</button>
           </div>
         </div>
@@ -86,12 +115,12 @@ export default function ManageStaff() {
       <div className="card">
         <h2>Services offered</h2>
         <div className="form-row">
-          <input placeholder="New service name" value={newService} onChange={(e) => setNewService(e.target.value)} />
-          <button className="button button-primary" onClick={addService}>Add service</button>
+          <input placeholder="New service name" maxLength={100} value={newService} onChange={(e) => setNewService(e.target.value)} />
+          <button className="button button-primary" onClick={addService} disabled={busy}>Add service</button>
         </div>
         <div className="tag-list" style={{ marginTop: 12 }}>
-          {db.services.map((s) => (
-            <span className="tag" key={s.id}>{s.name} <button className="tag-remove" aria-label={'Remove ' + s.name} onClick={() => removeService(s.id)}>✕</button></span>
+          {services.map((s) => (
+            <span className="tag" key={s.id}>{s.name} <button className="tag-remove" aria-label={'Remove ' + s.name} disabled={busy} onClick={() => removeService(s)}>✕</button></span>
           ))}
         </div>
       </div>
@@ -103,7 +132,7 @@ export default function ManageStaff() {
         </div>
         <select value={service} onChange={(e) => filtered(setService)(e.target.value)}>
           <option value="">All services</option>
-          {db.services.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+          {services.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
         </select>
         <select value={status} onChange={(e) => filtered(setStatus)(e.target.value)}>
           <option value="">Any status</option><option value="active">Active</option><option value="inactive">Inactive</option>
@@ -119,26 +148,27 @@ export default function ManageStaff() {
               {rows.map((u) => (
                 <Fragment key={u.id}>
                   <tr>
-                    <td className="text-muted">{userCode(u)}</td>
-                    <td><div className="person-cell"><Avatar name={u.name} small /> <span>{u.name}<span className="text-muted text-small" style={{ display: 'block', fontWeight: 400 }}>{u.title}</span></span></div></td>
+                    <td className="text-muted">{userCode({ id: u.id, role: 'staff' })}</td>
+                    <td><div className="person-cell"><Avatar name={u.full_name} small /> <span>{u.full_name}<span className="text-muted text-small" style={{ display: 'block', fontWeight: 400 }}>{u.title}</span></span></div></td>
                     <td>{u.email}</td>
-                    <td><div className="tag-list">{serviceIdsOf(u.id).map((i) => <span className="tag" key={i}>{sv(db, i)}</span>)}</div></td>
-                    <td><span className={'status-dot ' + (u.active ? 'dot-active' : 'dot-inactive')}>{u.active ? 'Active' : 'Inactive'}</span></td>
-                    <td><button className="button button-small" onClick={() => setEditing(editing === u.id ? '' : u.id)}>{editing === u.id ? 'Close' : 'Edit'}</button></td>
+                    <td><div className="tag-list">{u.service_ids.map((i) => <span className="tag" key={i}>{serviceName(i)}</span>)}</div></td>
+                    <td><span className={'status-dot ' + (u.is_active ? 'dot-active' : 'dot-inactive')}>{u.is_active ? 'Active' : 'Inactive'}</span></td>
+                    <td><button className="button button-small" onClick={() => openEditor(u)}>{editing === u.id ? 'Close' : 'Edit'}</button></td>
                   </tr>
-                  {editing === u.id && (
+                  {editing === u.id && draft && (
                     <tr className="edit-panel">
                       <td colSpan="6">
                         <div className="form-row">
-                          <div><label>Title</label><input value={u.title} onChange={(e) => edit(u.id, 'title', e.target.value)} /></div>
-                          <div><label>Office / department</label><input value={u.dept} onChange={(e) => edit(u.id, 'dept', e.target.value)} /></div>
+                          <div><label>Title</label><input maxLength={100} value={draft.title} onChange={(e) => setDraft({ ...draft, title: e.target.value })} /></div>
+                          <div><label>Office / department</label><input maxLength={100} value={draft.dept} onChange={(e) => setDraft({ ...draft, dept: e.target.value })} /></div>
                         </div>
                         <label>Bio</label>
-                        <textarea rows="2" value={u.bio} onChange={(e) => edit(u.id, 'bio', e.target.value)} />
+                        <textarea rows="2" maxLength={1000} value={draft.bio} onChange={(e) => setDraft({ ...draft, bio: e.target.value })} />
+                        <div style={{ marginTop: 10 }}><button className="button button-primary button-small" disabled={busy} onClick={() => saveProfile(u)}>Save profile</button></div>
                         <label>Services this person offers</label>
                         <div className="chip-list">
-                          {db.services.map((s) => (
-                            <button key={s.id} className={'chip' + (serviceIdsOf(u.id).includes(s.id) ? ' active' : '')} onClick={() => toggleService(u.id, s.id)}>{s.name}</button>
+                          {services.map((s) => (
+                            <button key={s.id} disabled={busy} className={'chip' + (u.service_ids.includes(s.id) ? ' active' : '')} onClick={() => toggleService(u, s.id)}>{s.name}</button>
                           ))}
                         </div>
                       </td>
